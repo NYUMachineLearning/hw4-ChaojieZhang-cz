@@ -164,6 +164,63 @@ importance(rfmodel)
 
 1. Compare the most important features from at least 2 different classes of feature selection methods covered in this tutorial with any reasonable machine learning dataset from mlbench. Do these feature selection methods provide similar results? 
 
+```{r}
+library(mlbench)
+library(corrplot)
+library(caret)
+```
+
+```{r}
+data(Glass, package="mlbench")
+View(Glass)
+summary(Glass$Type)
+```
+Feature Selection Using Correlation
+```{r}
+Glass_num = transform(Glass, RI = as.numeric(RI), 
+                      Na = as.numeric(Na), Mg = as.numeric(Mg), 
+                      Al = as.numeric(Al), Si = as.numeric(Si), 
+                      K = as.numeric(K), Ca = as.numeric(Ca), 
+                      Ba = as.numeric(Ba), Fe = as.numeric(Fe), 
+                      Type = as.numeric(Type))
+Glass_num[is.na(Glass_num)]
+```
+
+```{r}
+correlation_matrix = cor(Glass_num[,c(1:9)])
+corrplot(correlation_matrix, order = "hclust")
+```
+
+```{r}
+highly_correlated <- colnames(Glass_num[, -1])[findCorrelation(correlation_matrix, cutoff = 0.3, verbose = TRUE)]
+highly_correlated
+```
+
+Feature Selection Using Wrapper Methods: Recursive Feature Elimination (RFE)
+```{r}
+Glass_num = transform(Glass, RI = as.numeric(RI), 
+                      Na = as.numeric(Na), Mg = as.numeric(Mg), 
+                      Al = as.numeric(Al), Si = as.numeric(Si), 
+                      K = as.numeric(K), Ca = as.numeric(Ca), 
+                      Ba = as.numeric(Ba), Fe = as.numeric(Fe), 
+                      Type = as.numeric(Type))
+Glass_num[is.na(Glass_num)]
+```
+
+```{r}
+control = rfeControl(functions = caretFuncs, number = 2)
+results = rfe(Glass_num[,1:9], Glass_num[,10], sizes = c(2,5,9), rfeControl = control, method = "svmRadial")
+results
+results$variables
+# "Ba" "Na" "Al" "Mg" are in two results.
+# The two feature selection methods give similar results, but the results are in different orders.
+```
+
 2. Attempt a feature selection method not covered in this tutorial (backward elimination, forward propogation, etc.)
 
-
+```{r}
+# backward elimination
+fullmodel = lm(Glass_num[,1:9],Glass_num[,10],data=Glass_num)
+results = step(fullmodel, direction = "backward", trace=FALSE) 
+results
+```
